@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>空き家営業管理</title>
+<meta name="description" content="空き家営業管理チーム向けの営業状況ダッシュボード">
+<meta name="theme-color" content="#0f1117">
+<meta name="application-name" content="空き家営業管理">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d26; --surface2:#222532; --border:#2e3245;
+  --accent:#4f8cff; --accent2:#7c5cfc; --text:#e8eaf0; --muted:#6b7280; --muted2:#9ca3af;
+  --r:#ef4444; --r-bg:rgba(239,68,68,0.07); --r-bd:rgba(239,68,68,0.35);
+  --g:#22c55e; --g-bg:rgba(34,197,94,0.06); --g-bd:rgba(34,197,94,0.3);
+  --y:#f59e0b; --y-bg:rgba(245,158,11,0.06); --y-bd:rgba(245,158,11,0.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:40px;width:380px;}
+.login-logo{font-size:1.4rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:8px;}
+.login-sub{text-align:center;font-size:0.78rem;color:var(--muted);margin-bottom:30px;}
+.login-label{font-size:0.72rem;color:var(--muted);margin-bottom:5px;display:block;}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 13px;color:var(--text);font-family:inherit;font-size:0.85rem;margin-bottom:14px;}
+.login-input:focus{outline:none;border-color:var(--accent);}
+.login-btn{width:100%;padding:11px;background:var(--accent);color:white;border:none;border-radius:7px;font-size:0.88rem;font-family:inherit;cursor:pointer;font-weight:600;margin-top:4px;}
+.login-btn:hover{opacity:0.88;}
+.login-err{font-size:0.75rem;color:var(--r);text-align:center;margin-top:8px;display:none;}
+.login-users{margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+.login-users-title{font-size:0.68rem;color:var(--muted);margin-bottom:10px;letter-spacing:0.1em;}
+.user-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;background:var(--surface2);border-radius:20px;font-size:0.75rem;color:var(--muted2);cursor:pointer;margin:3px;border:1px solid var(--border);transition:all 0.15s;}
+.user-chip:hover{border-color:var(--accent);color:var(--text);}
+
+/* APP */
+#app{display:none;}
+#app.show{display:grid;}
+.app{display:grid;grid-template-columns:270px 1fr;grid-template-rows:56px 1fr;height:100vh;overflow:hidden;}
+
+/* HEADER */
+header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:10px;}
+.logo{font-weight:700;font-size:0.95rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-right:6px;}
+.sep{flex:1;}
+.hstat{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--surface2);border-radius:6px;font-size:0.7rem;color:var(--muted2);}
+.hstat strong{font-size:0.88rem;}
+.user-badge{display:flex;align-items:center;gap:7px;padding:5px 12px;background:var(--surface2);border-radius:6px;font-size:0.75rem;cursor:pointer;}
+.avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;}
+.btn-logout{padding:5px 11px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted2);font-size:0.72rem;cursor:pointer;font-family:inherit;}
+.btn-logout:hover{border-color:var(--r);color:var(--r);}
+
+/* SIDEBAR */
+aside{background:var(--surface);border-right:1px solid var(--border);padding:16px 0;overflow-y:auto;}
+.s-sec{padding:0 12px;margin-bottom:22px;}
+.s-lbl{font-size:0.6rem;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;padding:0 7px;margin-bottom:6px;}
+.s-item{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:6px;cursor:pointer;color:var(--muted2);font-size:0.78rem;transition:all 0.15s;}
+.s-item:hover,.s-item.active{background:var(--surface2);color:var(--text);}
+.pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot-r{background:var(--r);box-shadow:0 0 5px var(--r);}
+.dot-g{background:var(--g);box-shadow:0 0 5px var(--g);}
+.dot-y{background:var(--y);box-shadow:0 0 5px var(--y);}
+.dot-w{background:var(--muted);}
+.scnt{margin-left:auto;background:var(--surface2);padding:2px 6px;border-radius:8px;font-size:0.66rem;color:var(--muted);}
+.legend{margin:0 12px 16px;background:var(--surface2);border-radius:8px;padding:12px;}
+.leg-t{font-size:0.6rem;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.leg-i{display:flex;align-items:center;gap:7px;font-size:0.72rem;color:var(--muted2);padding:2px 0;}
+
+/* MAIN */
+main{overflow-y:auto;padding:16px 20px;}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px;}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.scard-l{font-size:0.66rem;color:var(--muted);margin-bottom:5px;}
+.scard-v{font-size:1.5rem;font-weight:700;line-height:1;}
+.scard-s{font-size:0.65rem;color:var(--muted);margin-top:2px;}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:7px;margin-bottom:13px;align-items:center;flex-wrap:wrap;}
+.tabs{display:flex;gap:2px;background:var(--surface);padding:3px;border-radius:7px;}
+.tab{padding:6px 14px;border-radius:5px;cursor:pointer;font-size:0.74rem;color:var(--muted2);border:none;background:none;font-family:inherit;transition:all 0.15s;}
+.tab.active{background:var(--surface2);color:var(--text);}
+.search{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text);font-family:inherit;font-size:0.78rem;}
+.search:focus{outline:none;border-color:var(--accent);}
+.btn-import{padding:7px 13px;background:var(--g-bg);border:1px solid var(--g-bd);color:var(--g);border-radius:7px;font-size:0.74rem;font-family:inherit;cursor:pointer;font-weight:500;display:flex;align-items:center;gap:5px;}
+.btn-import:hover{background:rgba(34,197,94,0.12);}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+
+/* CARDS */
+.plist{display:grid;gap:9px;}
+.pcard{border-radius:10px;border:1px solid var(--border);background:var(--surface);overflow:hidden;transition:transform 0.2s;}
+.pcard:hover{transform:translateY(-1px);}
+.pcard.pri-r{border-color:var(--r-bd);background:var(--r-bg);}
+.pcard.pri-g{border-color:var(--g-bd);background:var(--g-bg);}
+.pcard.pri-y{border-color:var(--y-bd);background:var(--y-bg);}
+.pcard.pri-r .stripe{background:var(--r);}
+.pcard.pri-g .stripe{background:var(--g);}
+.pcard.pri-y .stripe{background:var(--y);}
+.pcard.pri-w .stripe{background:var(--muted);}
+.card-inner{display:flex;}
+.stripe{width:4px;flex-shrink:0;}
+.cbody{padding:13px 15px;flex:1;}
+.ctop{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;}
+.cnum{font-size:0.65rem;color:var(--muted);background:var(--surface2);padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ctitle{font-weight:500;font-size:0.88rem;flex:1;line-height:1.4;}
+.pbadge{padding:2px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;flex-shrink:0;}
+.pb-r{background:rgba(239,68,68,0.15);color:var(--r);}
+.pb-g{background:rgba(34,197,94,0.15);color:var(--g);}
+.pb-y{background:rgba(245,158,11,0.15);color:var(--y);}
+.pb-w{background:var(--surface2);color:var(--muted2);}
+.caddrs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px;}
+.ablock{background:rgba(0,0,0,0.18);padding:8px 10px;border-radius:6px;}
+.albl{font-size:0.6rem;letter-spacing:0.12em;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:4px;}
+.adot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+.adot-p{background:var(--accent);}
+.adot-o{background:var(--accent2);}
+.atext{font-size:0.75rem;line-height:1.5;}
+.cmeta{display:flex;align-items:center;gap:11px;font-size:0.69rem;color:var(--muted);margin-bottom:10px;flex-wrap:wrap;}
+.stag{padding:2px 7px;border-radius:4px;font-size:0.65rem;font-weight:500;}
+.st-u{background:rgba(107,114,128,0.2);color:var(--muted2);}
+.st-v{background:rgba(245,158,11,0.15);color:var(--y);}
+.st-n{background:rgba(79,140,255,0.15);color:var(--accent);}
+.st-c{background:rgba(34,197,94,0.15);color:var(--g);}
+.cactions{display:flex;gap:6px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;}
+.btn{padding:5px 11px;border-radius:5px;font-size:0.69rem;cursor:pointer;border:none;font-family:inherit;font-weight:500;transition:opacity 0.2s;}
+.btn:hover{opacity:0.8;}
+.btn-p{background:var(--accent);color:white;}
+.btn-gh{background:var(--surface2);color:var(--muted2);}
+.btn-s{background:rgba(34,197,94,0.15);color:var(--g);}
+
+/* REPORT PANEL */
+.rpanel{padding:0 15px;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s;}
+.rpanel.show{max-height:600px;padding:0 15px 15px;}
+.rinner{border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;}
+.rtitle{font-size:0.75rem;color:var(--muted2);font-weight:500;margin-bottom:10px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fg{display:grid;gap:4px;}
+.fg.full{grid-column:1/-1;}
+.flbl{font-size:0.64rem;color:var(--muted);}
+.fi,.fsel,.fta{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:0.77rem;}
+.fi:focus,.fsel:focus,.fta:focus{outline:none;border-color:var(--accent);}
+.fta{resize:vertical;min-height:60px;}
+.fup{border:2px dashed var(--border);border-radius:7px;padding:14px;text-align:center;cursor:pointer;font-size:0.75rem;color:var(--muted);transition:all 0.2s;}
+.fup:hover{border-color:var(--accent);color:var(--accent);}
+.subrow{display:flex;gap:6px;justify-content:flex-end;margin-top:8px;}
+
+/* MAP VIEW */
+.map-view{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.map-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.map-title{font-weight:500;font-size:0.9rem;}
+.map-legend{display:flex;gap:14px;margin-left:auto;}
+.ml-item{display:flex;align-items:center;gap:5px;font-size:0.7rem;color:var(--muted2);}
+.ml-dot{width:10px;height:10px;border-radius:50%;}
+#map-container{height:500px;background:var(--surface2);position:relative;overflow:hidden;}
+.map-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:0.4;}
+.map-pins{position:absolute;inset:0;}
+.map-pin{position:absolute;transform:translate(-50%,-50%);cursor:pointer;transition:transform 0.2s;}
+.map-pin:hover{transform:translate(-50%,-50%) scale(1.3);}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
+.pin-label{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);padding:3px 7px;border-radius:4px;font-size:0.65rem;white-space:nowrap;opacity:0;transition:opacity 0.2s;pointer-events:none;}
+.map-pin:hover .pin-label{opacity:1;}
+.pin-r .pin-dot{background:var(--r);}
+.pin-g .pin-dot{background:var(--g);}
+.pin-y .pin-dot{background:var(--y);}
+.pin-w .pin-dot{background:var(--muted);}
+.map-info{padding:14px 20px;font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:8px;}
+.map-api-note{background:rgba(79,140,255,0.08);border:1px solid rgba(79,140,255,0.2);border-radius:8px;padding:12px 16px;font-size:0.78rem;color:var(--muted2);display:flex;gap:10px;align-items:flex-start;}
+
+/* IMPORT VIEW */
+.import-view{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;}
+.import-title{font-weight:500;font-size:1rem;margin-bottom:6px;}
+.import-sub{font-size:0.78rem;color:var(--muted);margin-bottom:22px;line-height:1.7;}
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(79,140,255,0.05);}
+.drop-icon{font-size:2.5rem;margin-bottom:10px;}
+.drop-text{font-size:0.85rem;color:var(--muted2);margin-bottom:6px;}
+.drop-sub{font-size:0.72rem;color:var(--muted);}
+.import-format{background:var(--surface2);border-radius:8px;padding:16px;}
+.import-format-title{font-size:0.72rem;color:var(--muted);margin-bottom:10px;letter-spacing:0.1em;text-transform:uppercase;}
+.col-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.col-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 11px;font-size:0.72rem;}
+.col-name{color:var(--accent);font-weight:500;margin-bottom:2px;}
+.col-desc{color:var(--muted);font-size:0.65rem;}
+.import-preview{margin-top:20px;display:none;}
+.preview-title{font-size:0.8rem;font-weight:500;margin-bottom:10px;color:var(--g);}
+.preview-table{width:100%;border-collapse:collapse;font-size:0.72rem;}
+.preview-table th{background:var(--surface2);padding:7px 10px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);}
+.preview-table td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--muted2);}
+.preview-table tr:hover td{background:var(--surface2);}
+.import-actions{display:flex;gap:8px;margin-top:14px;}
+.btn-import-confirm{padding:9px 20px;background:var(--g);color:white;border:none;border-radius:7px;font-size:0.8rem;font-family:inherit;cursor:pointer;font-weight:600;}
+
+/* NOTIFICATION */
+.notif{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 15px;border-radius:8px;font-size:0.77rem;font-weight:500;transform:translateY(60px);opacity:0;transition:all 0.25s;z-index:9999;}
+.notif.show{transform:translateY(0);opacity:1;}
+
+@media(max-width:768px){
+  .app{grid-template-columns:1fr;}
+  aside{display:none;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .caddrs{grid-template-columns:1fr;}
+  .col-list{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">⬡ 空き家営業管理</div>
+    <div class="login-sub">チームアカウントでログイン</div>
+    <label class="login-label">ユーザーID</label>
+    <input class="login-input" id="login-id" placeholder="例: kondo" value="kondo">
+    <label class="login-label">パスワード</label>
+    <input class="login-input" id="login-pw" type="password" placeholder="パスワード" value="1234">
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+    <div class="login-err" id="login-err">IDまたはパスワードが違います</div>
+    <div class="login-users">
+      <div class="login-users-title">クイックログイン（デモ用）</div>
+      <span class="user-chip" onclick="quickLogin('kondo','1234')">👤 近藤（管理者）</span>
+      <span class="user-chip" onclick="quickLogin('tanaka','1234')">👤 田中（営業）</span>
+      <span class="user-chip" onclick="quickLogin('yamada','1234')">👤 山田（営業）</span>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="app">
+
+<header>
+  <div class="logo">⬡ 空き家営業管理</div>
+  <div class="sep"></div>
+  <div class="hstat">総件数 <strong id="hd-total">7</strong></div>
+  <div class="hstat">🔴 <strong style="color:var(--r)" id="hd-r">2</strong></div>
+  <div class="hstat">🟢 <strong style="color:var(--g)" id="hd-g">2</strong></div>
+  <div class="hstat">🟡 <strong style="color:var(--y)" id="hd-y">2</strong></div>
+  <div class="user-badge" id="user-badge">
+    <div class="avatar" id="user-avatar">近</div>
+    <span id="user-name">近藤</span>
+  </div>
+  <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+</header>
+
+<aside>
+  <div class="s-sec">
+    <div class="s-lbl">優先度フィルター</div>
+    <div class="s-item active" onclick="filterP('all',this)">📋 すべて <span class="scnt" id="cnt-all">7</span></div>
+    <div class="s-item" onclick="filterP('r',this)"><span class="pdot dot-r"></span>遠方県外（最優先）<span class="scnt" id="cnt-r">2</span></div>
+    <div class="s-item" onclick="filterP('g',this)"><span class="pdot dot-g"></span>近隣県外（高優先）<span class="scnt" id="cnt-g">2</span></div>
+    <div class="s-item" onclick="filterP('y',this)"><span class="pdot dot-y"></span>市内住所相違<span class="scnt" id="cnt-y">2</span></div>
+    <div class="s-item" onclick="filterP('w',this)"><span class="pdot dot-w"></span>同一住所（低優先）<span class="scnt" id="cnt-w">1</span></div>
+  </div>
+  <div class="s-sec">
+    <div class="s-lbl">担当者</div>
+    <div class="s-item active" onclick="filterUser('all',this)">👥 全員</div>
+    <div class="s-item" onclick="filterUser('kondo',this)">👤 近藤</div>
+    <div class="s-item" onclick="filterUser('tanaka',this)">👤 田中</div>
+    <div class="s-item" onclick="filterUser('yamada',this)">👤 山田</div>
+  </div>
+  <div class="legend">
+    <div class="leg-t">優先度ロジック</div>
+    <div class="leg-i"><span class="pdot dot-r"></span>東京・大阪など遠方</div>
+    <div class="leg-i"><span class="pdot dot-g"></span>滋賀・奈良など近隣県外</div>
+    <div class="leg-i"><span class="pdot dot-y"></span>京都市内で住所相違</div>
+    <div class="leg-i"><span class="pdot dot-w"></span>物件と所有者が同住所</div>
+  </div>
+</aside>
+
+<main>
+  <div class="stats-row">
+    <div class="scard"><div class="scard-l">🔴 遠方県外（最優先）</div><div class="scard-v" style="color:var(--r)">2</div><div class="scard-s">東京・大阪など</div></div>
+    <div class="scard"><div class="scard-l">🟢 近隣県外（高優先）</div><div class="scard-v" style="color:var(--g)">2</div><div class="scard-s">滋賀・奈良など</div></div>
+    <div class="scard"><div class="scard-l">🟡 市内住所相違</div><div class="scard-v" style="color:var(--y)">2</div><div class="scard-s">京都市内で相違</div></div>
+    <div class="scard"><div class="scard-l">⬜ 同一住所</div><div class="scard-v" style="color:var(--muted2)">1</div><div class="scard-s">空き家可能性低</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tabs">
+      <button class="tab active" onclick="switchView('list',this)">📋 物件リスト</button>
+      <button class="tab" onclick="switchView('map',this)">🗺️ 地図</button>
+      <button class="tab" onclick="switchView('import',this)">📥 インポート</button>
+    </div>
+    <input class="search" placeholder="🔍 受付番号・住所で検索..." oninput="doSearch(this.value)">
+    <button class="btn-import" onclick="switchView('import',document.querySelectorAll('.tab')[2])">📥 Excel取込</button>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div class="view active" id="view-list">
+    <div class="plist" id="plist">
+
+      <!-- 🔴 第36820号 東京 -->
+      <div class="pcard pri-r" data-p="r" data-user="kondo">
+        <div class="card-inner"><div class="stripe"></div><div class="cbody">
+          <div class="ctop"><span class="cnum">第36820号</span><div class="ctitle">京都市中京区下妙覚寺町191 — 土地</div><span class="pbadge pb-r">🔴 遠方県外</span></div>
+          <div class="caddrs">
+            <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">京都市中京区下妙覚寺町191</div></div>
+            <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext" style="color:var(--r)">東京都江戸川区西葛西三丁目9番35-601号</div></div>
+          </div>
+          <div class="cmeta"><span>📅 8月6日</span><span>📐 土地</span><span>👤 近藤</span><span>備考: 外3</span><span class="stag st-u">未訪問</span></div>
+          <div class="cactions">
+            <button class="btn btn-p" onclick="openR('rp1')">📸 現地報告</button>
+            <button class="btn btn-gh">交渉中へ</button>
+            <button class="btn btn-gh" onclick="showMapPin(35.71,139.77,'第36820号')">🗺️ 地図</button>
+          </div>
+        </div></div>
+        <div class="rpanel" id="rp1"><div class="rinner">
+          <div class="rtitle">📋 現地訪問レポート — 第36820号</div>
+          <div class="frow">
+            <div class="fg"><label class="flbl">訪問日</label><input type="date" class="fi" value="2026-03-11"></div>
+            <div class="fg"><label class="flbl">担当者</label><select class="fsel"><option>近藤</option><option>田中</option><option>山田</option></select></div>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">物件の状態</label>
+            <select class="fsel"><option>— 選択 —</option><option>良好（すぐ活用可能）</option><option>要修繕（軽微）</option><option>要修繕（大規模）</option><option>取り壊し必要</option><option>他社売り出し中</option></select>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">現地メモ</label><textarea class="fta" placeholder="外観の状態、周辺環境、所有者への連絡タイミングなど"></textarea></div>
+          <div class="fup" onclick="fakeUp(this)" style="margin-top:8px">📷 写真をアップロード</div>
+          <div class="subrow"><button class="btn btn-gh" onclick="closeR('rp1')">閉じる</button><button class="btn btn-p" onclick="submitR(this,'rp1')">✓ 報告送信</button></div>
+        </div></div>
+      </div>
+
+      <!-- 🔴 第38740号 大阪豊中 -->
+      <div class="pcard pri-r" data-p="r" data-user="tanaka">
+        <div class="card-inner"><div class="stripe"></div><div class="cbody">
+          <div class="ctop"><span class="cnum">第38740号</span><div class="ctitle">京都市中京区丸太町27-8-1 — 区建</div><span class="pbadge pb-r">🔴 遠方県外</span></div>
+          <div class="caddrs">
+            <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">京都市中京区丸太町27-8-1</div></div>
+            <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext" style="color:var(--r)">大阪府豊中市新千里西町一丁目1番10-1107号</div></div>
+          </div>
+          <div class="cmeta"><span>📅 8月22日</span><span>📐 区建</span><span>👤 田中</span><span class="stag st-u">未訪問</span></div>
+          <div class="cactions">
+            <button class="btn btn-p" onclick="openR('rp2')">📸 現地報告</button>
+            <button class="btn btn-gh">交渉中へ</button>
+            <button class="btn btn-gh">🗺️ 地図</button>
+          </div>
+        </div></div>
+        <div class="rpanel" id="rp2"><div class="rinner">
+          <div class="rtitle">📋 現地訪問レポート — 第38740号</div>
+          <div class="frow">
+            <div class="fg"><label class="flbl">訪問日</label><input type="date" class="fi" value="2026-03-11"></div>
+            <div class="fg"><label class="flbl">担当者</label><select class="fsel"><option>田中</option><option>近藤</option><option>山田</option></select></div>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">物件の状態</label>
+            <select class="fsel"><option>— 選択 —</option><option>良好（すぐ活用可能）</option><option>要修繕（軽微）</option><option>要修繕（大規模）</option><option>取り壊し必要</option><option>他社売り出し中</option></select>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">現地メモ</label><textarea class="fta"></textarea></div>
+          <div class="fup" onclick="fakeUp(this)" style="margin-top:8px">📷 写真をアップロード</div>
+          <div class="subrow"><button class="btn btn-gh" onclick="closeR('rp2')">閉じる</button><button class="btn btn-p" onclick="submitR(this,'rp2')">✓ 報告送信</button></div>
+        </div></div>
+      </div>
+
+      <!-- 🟢 第39506号 滋賀 -->
+      <div class="pcard pri-g" data-p="g" data-user="kondo">
+        <div class="card-inner"><div class="stripe"></div><div class="cbody">
+          <div class="ctop"><span class="cnum">第39506号</span><div class="ctitle">京都市中京区越後町194-30 — 土地</div><span class="pbadge pb-g">🟢 近隣県外</span></div>
+          <div class="caddrs">
+            <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">京都市中京区越後町194-30</div></div>
+            <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext" style="color:var(--g)">滋賀県大津市池の里30番21号</div></div>
+          </div>
+          <div class="cmeta"><span>📅 8月28日</span><span>📐 土地</span><span>👤 近藤</span><span class="stag st-u">未訪問</span></div>
+          <div class="cactions">
+            <button class="btn btn-p" onclick="openR('rp3')">📸 現地報告</button>
+            <button class="btn btn-gh">交渉中へ</button>
+            <button class="btn btn-gh">🗺️ 地図</button>
+          </div>
+        </div></div>
+        <div class="rpanel" id="rp3"><div class="rinner">
+          <div class="rtitle">📋 現地訪問レポート — 第39506号</div>
+          <div class="frow">
+            <div class="fg"><label class="flbl">訪問日</label><input type="date" class="fi" value="2026-03-11"></div>
+            <div class="fg"><label class="flbl">担当者</label><select class="fsel"><option>近藤</option><option>田中</option><option>山田</option></select></div>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">物件の状態</label>
+            <select class="fsel"><option>— 選択 —</option><option>良好（すぐ活用可能）</option><option>要修繕（軽微）</option><option>要修繕（大規模）</option><option>取り壊し必要</option><option>他社売り出し中</option></select>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">現地メモ</label><textarea class="fta"></textarea></div>
+          <div class="fup" onclick="fakeUp(this)" style="margin-top:8px">📷 写真をアップロード</div>
+          <div class="subrow"><button class="btn btn-gh" onclick="closeR('rp3')">閉じる</button><button class="btn btn-p" onclick="submitR(this,'rp3')">✓ 報告送信</button></div>
+        </div></div>
+      </div>
+
+      <!-- 🟢 第38735号 大阪茨木 交渉中 -->
+      <div class="pcard pri-g" data-p="g" data-user="tanaka">
+        <div class="card-inner"><div class="stripe"></div><div class="cbody">
+          <div class="ctop"><span class="cnum">第38735号</span><div class="ctitle">京都市中京区岩上町725-1-803 — 区建</div><span class="pbadge pb-g">🟢 近隣県外</span></div>
+          <div class="caddrs">
+            <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">京都市中京区岩上町725-1-803</div></div>
+            <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext" style="color:var(--g)">大阪府茨木市沢良宜東町12番34号</div></div>
+          </div>
+          <div class="cmeta"><span>📅 8月22日</span><span>📐 区建</span><span>👤 田中</span><span class="stag st-n">交渉中</span></div>
+          <div class="cactions">
+            <button class="btn btn-s">✓ 成約へ</button>
+            <button class="btn btn-gh">📸 追加報告</button>
+            <button class="btn btn-gh">🗺️ 地図</button>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- 🟡 第36783号 市内相違 -->
+      <div class="pcard pri-y" data-p="y" data-user="yamada">
+        <div class="card-inner"><div class="stripe"></div><div class="cbody">
+          <div class="ctop"><span class="cnum">第36783号</span><div class="ctitle">京都市中京区夷町567 — 土地</div><span class="pbadge pb-y">🟡 市内相違</span></div>
+          <div class="caddrs">
+            <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">京都市中京区間之町通二条上る夷町567番地</div></div>
+            <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext" style="color:var(--y)">京都市上京区今出川通寺町西入二筋目草堂内町520番地1</div></div>
+          </div>
+          <div class="cmeta"><span>📅 8月6日</span><span>📐 土地</span><span>👤 山田</span><span class="stag st-u">未訪問</span></div>
+          <div class="cactions">
+            <button class="btn btn-p" onclick="openR('rp5')">📸 現地報告</button>
+            <button class="btn btn-gh">交渉中へ</button>
+            <button class="btn btn-gh">🗺️ 地図</button>
+          </div>
+        </div></div>
+        <div class="rpanel" id="rp5"><div class="rinner">
+          <div class="rtitle">📋 現地訪問レポート — 第36783号</div>
+          <div class="frow">
+            <div class="fg"><label class="flbl">訪問日</label><input type="date" class="fi" value="2026-03-11"></div>
+            <div class="fg"><label class="flbl">担当者</label><select class="fsel"><option>山田</option><option>近藤</option><option>田中</option></select></div>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">物件の状態</label>
+            <select class="fsel"><option>— 選択 —</option><option>良好（すぐ活用可能）</option><option>要修繕（軽微）</option><option>要修繕（大規模）</option><option>取り壊し必要</option><option>他社売り出し中</option></select>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">現地メモ</label><textarea class="fta"></textarea></div>
+          <div class="fup" onclick="fakeUp(this)" style="margin-top:8px">📷 写真をアップロード</div>
+          <div class="subrow"><button class="btn btn-gh" onclick="closeR('rp5')">閉じる</button><button class="btn btn-p" onclick="submitR(this,'rp5')">✓ 報告送信</button></div>
+        </div></div>
+      </div>
+
+      <!-- 🟡 第36819号 市内相違 訪問済み -->
+      <div class="pcard pri-y" data-p="y" data-user="kondo">
+        <div class="card-inner"><div class="stripe"></div><div class="cbody">
+          <div class="ctop"><span class="cnum">第36819号</span><div class="ctitle">京都市中京区烏帽子屋町486-1-707 — 区建</div><span class="pbadge pb-y">🟡 市内相違</span></div>
+          <div class="caddrs">
+            <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">京都市中京区烏帽子屋町486-1-707</div></div>
+            <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext" style="color:var(--y)">京都市中京区室町通三条下る三条室町アーバンライフ707号</div></div>
+          </div>
+          <div class="cmeta"><span>📅 8月6日</span><span>📐 区建</span><span>👤 近藤</span><span class="stag st-v">訪問済み</span></div>
+          <div class="cactions">
+            <button class="btn btn-s">✓ 成約へ</button>
+            <button class="btn btn-gh">交渉中へ</button>
+            <button class="btn btn-gh">🗺️ 地図</button>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- ⬜ 第36406号 -->
+      <div class="pcard pri-w" data-p="w" data-user="tanaka">
+        <div class="card-inner"><div class="stripe"></div><div class="cbody">
+          <div class="ctop"><span class="cnum">第36406号</span><div class="ctitle">京都市右京区亀屋町375-1-1006 — 区建</div><span class="pbadge pb-w">⬜ 低優先</span></div>
+          <div class="caddrs">
+            <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">京都市右京区亀屋町（御幸町通御池）375-1-1006</div></div>
+            <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext">滋賀県草津市南笠町1077番15</div></div>
+          </div>
+          <div class="cmeta"><span>📅 8月4日</span><span>📐 区建</span><span>👤 田中</span><span class="stag st-u">未訪問</span></div>
+          <div class="cactions">
+            <button class="btn btn-p" onclick="openR('rp7')">📸 現地報告</button>
+            <button class="btn btn-gh">🗺️ 地図</button>
+          </div>
+        </div></div>
+        <div class="rpanel" id="rp7"><div class="rinner">
+          <div class="rtitle">📋 現地訪問レポート — 第36406号</div>
+          <div class="frow">
+            <div class="fg"><label class="flbl">訪問日</label><input type="date" class="fi" value="2026-03-11"></div>
+            <div class="fg"><label class="flbl">担当者</label><select class="fsel"><option>田中</option><option>近藤</option><option>山田</option></select></div>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">物件の状態</label>
+            <select class="fsel"><option>— 選択 —</option><option>良好（すぐ活用可能）</option><option>要修繕（軽微）</option><option>要修繕（大規模）</option><option>取り壊し必要</option><option>他社売り出し中</option></select>
+          </div>
+          <div class="fg full" style="margin-top:8px"><label class="flbl">現地メモ</label><textarea class="fta"></textarea></div>
+          <div class="fup" onclick="fakeUp(this)" style="margin-top:8px">📷 写真をアップロード</div>
+          <div class="subrow"><button class="btn btn-gh" onclick="closeR('rp7')">閉じる</button><button class="btn btn-p" onclick="submitR(this,'rp7')">✓ 報告送信</button></div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MAP VIEW -->
+  <div class="view" id="view-map">
+    <div class="map-view">
+      <div class="map-header">
+        <div class="map-title">🗺️ 物件マップ — 京都市中心部</div>
+        <div class="map-legend">
+          <div class="ml-item"><span class="ml-dot" style="background:var(--r)"></span>遠方県外</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--g)"></span>近隣県外</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--y)"></span>市内相違</div>
+          <div class="ml-item"><span class="ml-dot" style="background:var(--muted)"></span>低優先</div>
+        </div>
+      </div>
+      <div id="map-container">
+        <div class="map-grid"></div>
+        <div class="map-pins" id="map-pins">
+          <!-- 京都市中心部の模擬ピン -->
+          <div class="map-pin pin-r" style="left:48%;top:40%"><div class="pin-dot"></div><div class="pin-label">第36820号 下妙覚寺町</div></div>
+          <div class="map-pin pin-r" style="left:52%;top:55%"><div class="pin-dot"></div><div class="pin-label">第38740号 丸太町</div></div>
+          <div class="map-pin pin-g" style="left:44%;top:48%"><div class="pin-dot"></div><div class="pin-label">第39506号 越後町</div></div>
+          <div class="map-pin pin-g" style="left:38%;top:52%"><div class="pin-dot"></div><div class="pin-label">第38735号 岩上町</div></div>
+          <div class="map-pin pin-y" style="left:55%;top:44%"><div class="pin-dot"></div><div class="pin-label">第36783号 夷町</div></div>
+          <div class="map-pin pin-y" style="left:50%;top:58%"><div class="pin-dot"></div><div class="pin-label">第36819号 烏帽子屋町</div></div>
+          <div class="map-pin pin-w" style="left:32%;top:46%"><div class="pin-dot"></div><div class="pin-label">第36406号 亀屋町</div></div>
+        </div>
+        <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:0.68rem;color:var(--muted);background:rgba(0,0,0,0.5);padding:5px 12px;border-radius:4px;">※ デモ表示（本番はGoogle Maps APIで正確な住所にピンを表示）</div>
+      </div>
+      <div class="map-info">
+        <span>📍 7件の物件を表示中</span>
+        <span style="margin-left:auto">
+          <div class="map-api-note">💡 本番運用時はGoogle Maps APIキーを設定すると、住所から自動でピンが立ちます。Anthropic APIのクレジットが確保できたら設定しましょう。</div>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORT VIEW -->
+  <div class="view" id="view-import">
+    <div class="import-view">
+      <div class="import-title">📥 Excelから一括インポート</div>
+      <div class="import-sub">
+        既存のExcelシートをそのままアップロードするだけで物件リストに追加されます。<br>
+        列の順番が違っても自動で認識します。
+      </div>
+
+      <div class="drop-zone" id="drop-zone"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)"
+        onclick="document.getElementById('file-input').click()">
+        <div class="drop-icon">📊</div>
+        <div class="drop-text">ここにExcelファイルをドラッグ＆ドロップ</div>
+        <div class="drop-sub">または クリックしてファイルを選択 (.xlsx, .xls, .csv)</div>
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFile(this.files[0])">
+      </div>
+
+      <div class="import-format">
+        <div class="import-format-title">対応している列名</div>
+        <div class="col-list">
+          <div class="col-item"><div class="col-name">受付番号 / NO</div><div class="col-desc">第36783号 など</div></div>
+          <div class="col-item"><div class="col-name">日付 / 受付日</div><div class="col-desc">8月6日 など</div></div>
+          <div class="col-item"><div class="col-name">種別</div><div class="col-desc">土地 / 区建 など</div></div>
+          <div class="col-item"><div class="col-name">所在地 / 物件住所</div><div class="col-desc">物件の場所</div></div>
+          <div class="col-item"><div class="col-name">所有者住所</div><div class="col-desc">所有者の住所</div></div>
+          <div class="col-item"><div class="col-name">備考 / 氏名</div><div class="col-desc">メモ・所有者名</div></div>
+        </div>
+      </div>
+
+      <div class="import-preview" id="import-preview">
+        <div class="preview-title" id="preview-title"></div>
+        <div style="overflow-x:auto">
+          <table class="preview-table" id="preview-table"></table>
+        </div>
+        <div class="import-actions">
+          <button class="btn btn-gh" onclick="cancelImport()">キャンセル</button>
+          <button class="btn-import-confirm" onclick="confirmImport()">✓ この内容でインポート</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ===== USERS =====
+const USERS = {
+  kondo:  { name:'近藤', role:'管理者', pass:'1234' },
+  tanaka: { name:'田中', role:'営業',   pass:'1234' },
+  yamada: { name:'山田', role:'営業',   pass:'1234' },
+};
+let currentUser = null;
+
+function doLogin() {
+  const id = document.getElementById('login-id').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  if (USERS[id] && USERS[id].pass === pw) {
+    loginSuccess(id);
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+  }
+}
+
+function quickLogin(id, pw) {
+  document.getElementById('login-id').value = id;
+  document.getElementById('login-pw').value = pw;
+  loginSuccess(id);
+}
+
+function loginSuccess(id) {
+  currentUser = id;
+  const u = USERS[id];
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('show');
+  document.getElementById('user-name').textContent = u.name + '（' + u.role + '）';
+  document.getElementById('user-avatar').textContent = u.name[0];
+  notify('✓ ようこそ、' + u.name + 'さん！');
+}
+
+function doLogout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-err').style.display = 'none';
+  currentUser = null;
+}
+
+// ===== VIEW SWITCH =====
+function switchView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ===== FILTER =====
+function filterP(p, el) {
+  document.querySelectorAll('.s-sec:first-child .s-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.pcard').forEach(c => {
+    c.style.display = (p === 'all' || c.dataset.p === p) ? '' : 'none';
+  });
+}
+
+function filterUser(u, el) {
+  document.querySelectorAll('.s-sec:nth-child(2) .s-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.pcard').forEach(c => {
+    c.style.display = (u === 'all' || c.dataset.user === u) ? '' : 'none';
+  });
+}
+
+function doSearch(val) {
+  const q = val.toLowerCase();
+  document.querySelectorAll('.pcard').forEach(c => {
+    c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// ===== REPORT =====
+function openR(id) { document.getElementById(id).classList.toggle('show'); }
+function closeR(id) { document.getElementById(id).classList.remove('show'); }
+
+function submitR(btn, id) {
+  closeR(id);
+  const card = btn.closest('.pcard');
+  const tag = card.querySelector('.stag');
+  tag.className = 'stag st-v';
+  tag.textContent = '訪問済み';
+  notify('✓ 現地報告を送信しました（チームに共有されました）');
+}
+
+function fakeUp(el) {
+  el.textContent = '✓ 写真3枚追加済み';
+  el.style.borderColor = 'var(--g)';
+  el.style.color = 'var(--g)';
+}
+
+// ===== MAP =====
+function showMapPin(lat, lng, name) {
+  switchView('map', document.querySelectorAll('.tab')[1]);
+  notify('🗺️ ' + name + ' を地図で確認');
+}
+
+// ===== EXCEL IMPORT =====
+let importData = [];
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      showPreview(json, file.name);
+    } catch(err) {
+      notify('⚠️ ファイルの読み込みに失敗しました');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showPreview(data, filename) {
+  importData = data;
+  if (!data.length) { notify('⚠️ データが見つかりませんでした'); return; }
+
+  const preview = document.getElementById('import-preview');
+  const title = document.getElementById('preview-title');
+  const table = document.getElementById('preview-table');
+
+  title.textContent = '✓ ' + filename + ' — ' + data.length + '件を検出しました';
+  preview.style.display = 'block';
+
+  const keys = Object.keys(data[0]);
+  const rows = data.slice(0, 5);
+
+  let html = '<thead><tr>' + keys.map(k => '<th>' + k + '</th>').join('') + '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += '<tr>' + keys.map(k => '<td>' + (row[k] || '—') + '</td>').join('') + '</tr>';
+  });
+  if (data.length > 5) html += '<tr><td colspan="' + keys.length + '" style="text-align:center;color:var(--muted)">...他 ' + (data.length - 5) + ' 件</td></tr>';
+  html += '</tbody>';
+  table.innerHTML = html;
+
+  notify('📊 ' + data.length + '件のデータを読み込みました');
+}
+
+function cancelImport() {
+  document.getElementById('import-preview').style.display = 'none';
+  importData = [];
+}
+
+function confirmImport() {
+  if (!importData.length) return;
+  const list = document.getElementById('plist');
+  let added = 0;
+
+  importData.forEach((row, i) => {
+    const num = row['受付番号'] || row['NO'] || row['番号'] || ('新規' + (i+1));
+    const addr = row['所在地'] || row['物件住所'] || row['所在地（物件）'] || '';
+    const owner = row['所有者住所'] || row['所有者'] || '';
+    const type = row['種別'] || '';
+    const date = row['日付'] || row['受付日'] || '';
+
+    if (!addr) return;
+
+    // 優先度を自動判定
+    let pri = 'w', priClass = 'pri-w', badgeClass = 'pb-w', badgeText = '⬜ 低優先';
+    const farPref = ['東京','大阪','神奈川','埼玉','千葉','愛知','福岡','北海道'];
+    const nearPref = ['滋賀','奈良','兵庫','三重','福井'];
+
+    if (farPref.some(p => owner.includes(p))) {
+      pri='r'; priClass='pri-r'; badgeClass='pb-r'; badgeText='🔴 遠方県外';
+    } else if (nearPref.some(p => owner.includes(p))) {
+      pri='g'; priClass='pri-g'; badgeClass='pb-g'; badgeText='🟢 近隣県外';
+    } else if (owner.includes('京都') && owner !== addr) {
+      pri='y'; priClass='pri-y'; badgeClass='pb-y'; badgeText='🟡 市内相違';
+    }
+
+    const card = document.createElement('div');
+    card.className = 'pcard ' + priClass;
+    card.dataset.p = pri;
+    card.dataset.user = currentUser || 'kondo';
+    card.innerHTML = `
+      <div class="card-inner"><div class="stripe"></div><div class="cbody">
+        <div class="ctop">
+          <span class="cnum">${num}</span>
+          <div class="ctitle">${addr} — ${type}</div>
+          <span class="pbadge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="caddrs">
+          <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">${addr}</div></div>
+          <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext">${owner || '—'}</div></div>
+        </div>
+        <div class="cmeta"><span>📅 ${date}</span><span>📐 ${type}</span><span>👤 ${USERS[currentUser]?.name||'近藤'}</span><span class="stag st-u">未訪問</span></div>
+        <div class="cactions">
+          <button class="btn btn-p">📸 現地報告</button>
+          <button class="btn btn-gh">交渉中へ</button>
+          <button class="btn btn-gh">🗺️ 地図</button>
+        </div>
+      </div></div>`;
+    list.appendChild(card);
+    added++;
+  });
+
+  cancelImport();
+  updateCounts();
+  notify('✓ ' + added + '件をインポートしました（優先度を自動判定）');
+  switchView('list', document.querySelectorAll('.tab')[0]);
+}
+
+function updateCounts() {
+  const cards = document.querySelectorAll('.pcard');
+  const c = { all: cards.length, r:0, g:0, y:0, w:0 };
+  cards.forEach(card => c[card.dataset.p]++);
+  document.getElementById('cnt-all').textContent = c.all;
+  document.getElementById('cnt-r').textContent = c.r;
+  document.getElementById('cnt-g').textContent = c.g;
+  document.getElementById('cnt-y').textContent = c.y;
+  document.getElementById('cnt-w').textContent = c.w;
+  document.getElementById('hd-total').textContent = c.all;
+  document.getElementById('hd-r').textContent = c.r;
+  document.getElementById('hd-g').textContent = c.g;
+  document.getElementById('hd-y').textContent = c.y;
+}
+
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch((err) => {
+      console.error('Service Worker registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
