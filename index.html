@@ -691,7 +691,20 @@ function handleFile(file) {
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+ 
+      // ヘッダー行を自動検出（最大5行まで探す）
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const KNOWN_HEADERS = ['受付番号','NO','番号','所在地','物件住所','所有者住所','種別','日付','受付日','氏名','備考'];
+      let headerRow = 0;
+      for (let i = 0; i < Math.min(5, raw.length); i++) {
+        const rowStr = raw[i].join('');
+        if (KNOWN_HEADERS.some(h => rowStr.includes(h))) {
+          headerRow = i;
+          break;
+        }
+      }
+ 
+      const json = XLSX.utils.sheet_to_json(ws, { defval: '', range: headerRow });
       showPreview(json, file.name);
     } catch(err) {
       notify('⚠️ ファイルの読み込みに失敗しました');
