@@ -13,6 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg:#0f1117; --surface:#1a1d26; --surface2:#222532; --border:#2e3245;
@@ -549,6 +550,41 @@ const DARK_STYLE = [
   {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#4f8cff'}]},
 ];
 
+// ===== SUPABASE =====
+const SUPA_URL = 'https://cffzxqjhtpvixmdsfrpb.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZnp4cWpodHB2aXhtZHNmcnBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5ODYyNzgsImV4cCI6MjA4OTU2MjI3OH0.eFeCoM3OJQcWakcpZm4J9-aTY9fEf25tukw0wErU4Bc';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function loadFromSupabase() {
+  const { data, error } = await supa.from('properties').select('*').order('created_at');
+  if (error) { console.error('load error', error); return; }
+  allProperties = (data || []).map(r => ({
+    id: r.id, num: r.num, addr: r.addr, owner: r.owner,
+    type: r.type, date: r.date, pri: r.pri,
+    user: r.user_id, judge: r.judge || null,
+    month: r.month, locationWard: r.location_ward,
+    ownerWard: r.owner_ward, marker: null,
+  }));
+  renderAll();
+}
+
+async function saveToSupabase(props) {
+  const rows = props.map(p => ({
+    id: p.id, num: p.num, addr: p.addr, owner: p.owner,
+    type: p.type, date: p.date, pri: p.pri,
+    user_id: p.user, judge: p.judge,
+    month: p.month, location_ward: p.locationWard,
+    owner_ward: p.ownerWard,
+  }));
+  const { error } = await supa.from('properties').upsert(rows);
+  if (error) console.error('save error', error);
+}
+
+async function updateJudgeInSupabase(id, judge) {
+  const { error } = await supa.from('properties').update({ judge }).eq('id', id);
+  if (error) console.error('judge update error', error);
+}
+
 // ===== STATE =====
 // 全物件データを JS で管理
 let allProperties = [];
@@ -588,8 +624,8 @@ function loginSuccess(id) {
   document.getElementById('app').classList.add('show');
   document.getElementById('user-name').textContent = u.name + '（' + u.role + '）';
   document.getElementById('user-avatar').textContent = u.name[0];
-  renderAll();
   notify('✓ ようこそ、' + u.name + 'さん！');
+  loadFromSupabase();
 }
 function doLogout() {
   document.getElementById('login-screen').style.display = 'flex';
@@ -706,7 +742,8 @@ function extractMonth(date) {
 function setJudge(id, judge) {
   const prop = allProperties.find(p => p.id === id);
   if (!prop) return;
-  prop.judge = judge; // 'ok' | 'ng-other' | 'ng-resident' | null
+  prop.judge = judge;
+  updateJudgeInSupabase(id, judge);
   renderLocationList();
   updateCounts();
   if (activeMainTab === 'owner') renderOwnerTab();
@@ -1110,6 +1147,10 @@ function confirmImport() {
 
   cancelImport();
   renderAll();
+
+  // Supabaseに保存
+  const newProps = allProperties.slice(-added);
+  saveToSupabase(newProps);
 
   // マップが初期化済みなら新しい物件もプロット
   if (mapInitialized && gMap && geocoder) {
