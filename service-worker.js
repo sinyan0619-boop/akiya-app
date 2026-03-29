@@ -1,11 +1,10 @@
-const CACHE_NAME = 'akiya-app-v1';
+const CACHE_NAME = 'akiya-app-v2'; // ← バージョン上げる
 const APP_SHELL = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/service-worker.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
+  // index.html と / を削除
 ];
 
 self.addEventListener('install', (event) => {
@@ -24,6 +23,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // index.htmlは常にネットワークから取得
+  const url = new URL(event.request.url);
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
