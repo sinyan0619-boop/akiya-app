@@ -342,7 +342,7 @@ main{overflow-y:auto;padding:14px 18px;}
   <div class="logo">⬡ 空き家営業管理</div>
   <div class="sep"></div>
   <div class="hstat">総件数 <strong id="hd-total">0</strong></div>
-  <div class="hstat">対象 <strong style="color:var(--g)" id="hd-ok">0</strong></div>
+  <div class="hstat">空き家確認済み <strong style="color:var(--g)" id="hd-vacant">0</strong></div>
   <div class="user-badge">
     <div class="avatar" id="user-avatar">近</div>
     <span id="user-name">近藤</span>
@@ -389,10 +389,24 @@ main{overflow-y:auto;padding:14px 18px;}
   <div class="s-sec">
     <div class="s-lbl">優先度</div>
     <div class="s-item active" onclick="filterP('all',this)">すべて <span class="scnt" id="cnt-all">0</span></div>
-    <div class="s-item" onclick="filterP('r',this)"><span class="pdot dot-r"></span>遠方県外 <span class="scnt" id="cnt-r">0</span></div>
-    <div class="s-item" onclick="filterP('g',this)"><span class="pdot dot-g"></span>近隣県外 <span class="scnt" id="cnt-g">0</span></div>
-    <div class="s-item" onclick="filterP('y',this)"><span class="pdot dot-y"></span>市内住所相違 <span class="scnt" id="cnt-y">0</span></div>
-    <div class="s-item" onclick="filterP('w',this)"><span class="pdot dot-w"></span>同一住所 <span class="scnt" id="cnt-w">0</span></div>
+    <div class="s-item" onclick="filterP('r',this)"><span class="pdot dot-r"></span>最優先（遠方） <span class="scnt" id="cnt-r">0</span></div>
+    <div class="s-item" onclick="filterP('g',this)"><span class="pdot dot-g"></span>優先（近隣県外） <span class="scnt" id="cnt-g">0</span></div>
+    <div class="s-item" onclick="filterP('y',this)"><span class="pdot dot-y"></span>通常（市内別住所） <span class="scnt" id="cnt-y">0</span></div>
+    <div class="s-item" onclick="filterP('w',this)"><span class="pdot dot-w"></span>低優先（同一住所） <span class="scnt" id="cnt-w">0</span></div>
+  </div>
+
+  <div class="s-divider"></div>
+
+  <!-- ステータスフィルター -->
+  <div class="s-sec">
+    <div class="s-lbl">ステータス</div>
+    <div class="s-item active" onclick="filterStatus('all',this)">すべて <span class="scnt" id="cnt-st-all">0</span></div>
+    <div class="s-item" onclick="filterStatus('unconfirmed',this)">⬜ 未確認 <span class="scnt" id="cnt-st-unc">0</span></div>
+    <div class="s-item" onclick="filterStatus('vacant',this)">✅ 空き家確認済み <span class="scnt" id="cnt-st-vac">0</span></div>
+    <div class="s-item" onclick="filterStatus('not-vacant',this)">❌ 営業対象外 <span class="scnt" id="cnt-st-ng">0</span></div>
+    <div class="s-item" onclick="filterStatus('approaching',this)">🚶 アプローチ中 <span class="scnt" id="cnt-st-app">0</span></div>
+    <div class="s-item" onclick="filterStatus('closed',this)">🎉 成約 <span class="scnt" id="cnt-st-cls">0</span></div>
+    <div class="s-item" onclick="filterStatus('pass',this)">⏭ 見送り <span class="scnt" id="cnt-st-pas">0</span></div>
   </div>
 
   <div class="s-divider"></div>
@@ -418,9 +432,9 @@ main{overflow-y:auto;padding:14px 18px;}
   <div id="main-location" class="main-panel">
     <div class="stats-row">
       <div class="scard"><div class="scard-l">総件数</div><div class="scard-v" id="stat-total">0</div><div class="scard-s">インポート済み</div></div>
-      <div class="scard"><div class="scard-l">✅ 営業対象</div><div class="scard-v" style="color:var(--g)" id="stat-ok">0</div><div class="scard-s">空き家確認済み</div></div>
-      <div class="scard"><div class="scard-l">❌ 営業対象外</div><div class="scard-v" style="color:var(--r)" id="stat-ng">0</div><div class="scard-s">他社・移住中</div></div>
-      <div class="scard"><div class="scard-l">⬜ 未確認</div><div class="scard-v" style="color:var(--muted2)" id="stat-unk">0</div><div class="scard-s">物件確認待ち</div></div>
+      <div class="scard"><div class="scard-l">✅ 空き家確認済み</div><div class="scard-v" style="color:var(--g)" id="stat-vacant">0</div><div class="scard-s">物件確認完了</div></div>
+      <div class="scard"><div class="scard-l">🚶 アプローチ済み</div><div class="scard-v" style="color:var(--accent)" id="stat-approached">0</div><div class="scard-s">所有者接触済み</div></div>
+      <div class="scard"><div class="scard-l">🎉 成約</div><div class="scard-v" style="color:var(--y)" id="stat-closed">0</div><div class="scard-s">仕入れ完了</div></div>
     </div>
 
     <div class="toolbar">
@@ -448,9 +462,9 @@ main{overflow-y:auto;padding:14px 18px;}
         <div class="map-header">
           <div class="map-title">🗺️ 物件マップ</div>
           <div class="map-legend">
-            <div class="ml-item"><span class="ml-dot" style="background:#ef4444"></span>遠方県外</div>
-            <div class="ml-item"><span class="ml-dot" style="background:#22c55e"></span>近隣県外</div>
-            <div class="ml-item"><span class="ml-dot" style="background:#f59e0b"></span>市内相違</div>
+            <div class="ml-item"><span class="ml-dot" style="background:#ef4444"></span>最優先</div>
+            <div class="ml-item"><span class="ml-dot" style="background:#22c55e"></span>優先</div>
+            <div class="ml-item"><span class="ml-dot" style="background:#f59e0b"></span>通常</div>
             <div class="ml-item"><span class="ml-dot" style="background:#6b7280"></span>低優先</div>
           </div>
         </div>
@@ -534,7 +548,7 @@ main{overflow-y:auto;padding:14px 18px;}
 <script>
 // ===== CONFIG =====
 const PRI_COLORS = { r:'#ef4444', g:'#22c55e', y:'#f59e0b', w:'#6b7280' };
-const PRI_LABELS = { r:'🔴 遠方県外', g:'🟢 近隣県外', y:'🟡 市内相違', w:'⬜ 低優先' };
+const PRI_LABELS = { r:'🔴 最優先', g:'🟢 優先', y:'🟡 通常', w:'⬜ 低優先' };
 const FAR  = ['東京','神奈川','埼玉','千葉','愛知','福岡','北海道','宮城','広島','静岡','新潟','沖縄'];
 const NEAR = ['滋賀','奈良','兵庫','三重','福井','和歌山','大阪'];
 
@@ -561,13 +575,22 @@ const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 async function loadFromSupabase() {
   const { data, error } = await supa.from('properties').select('*').order('created_at');
   if (error) { console.error('load error', error); return; }
-  allProperties = (data || []).map(r => ({
-    id: r.id, num: r.num, addr: r.addr, owner: r.owner,
-    type: r.type, date: r.date, pri: r.pri,
-    user: r.user_id, judge: r.judge || null,
-    month: r.month, locationWard: r.location_ward,
-    ownerWard: r.owner_ward, marker: null,
-  }));
+  const judgeMap = { ok: 'vacant', 'ng-other': 'other-sale', 'ng-resident': 'not-vacant' };
+  allProperties = (data || []).map(r => {
+    const j = r.judge || null;
+    return {
+      id: r.id, num: r.num, addr: r.addr, owner: r.owner,
+      type: r.type, date: r.date, pri: r.pri,
+      user: r.user_id, judge: judgeMap[j] || j,
+      approach: r.approach || null,
+      visitDate: r.visit_date || '',
+      approachDate: r.approach_date || '',
+      siteMemo: r.site_memo || '',
+      approachMemo: r.approach_memo || '',
+      month: r.month, locationWard: r.location_ward,
+      ownerWard: r.owner_ward, marker: null,
+    };
+  });
   renderAll();
 }
 
@@ -578,14 +601,32 @@ async function saveToSupabase(props) {
     user_id: p.user, judge: p.judge,
     month: p.month, location_ward: p.locationWard,
     owner_ward: p.ownerWard,
+    approach: p.approach || null,
+    visit_date: p.visitDate || null,
+    approach_date: p.approachDate || null,
+    site_memo: p.siteMemo || null,
+    approach_memo: p.approachMemo || null,
   }));
-  const { error } = await supa.from('properties').upsert(rows);
-  if (error) console.error('save error', error);
+  let { error } = await supa.from('properties').upsert(rows);
+  if (error) {
+    // 新カラム未追加の場合は基本フィールドのみで再試行
+    const basic = rows.map(({ approach, visit_date, approach_date, site_memo, approach_memo, ...r }) => r);
+    const res = await supa.from('properties').upsert(basic);
+    if (res.error) console.error('save error', res.error);
+  }
 }
 
-async function updateJudgeInSupabase(id, judge) {
-  const { error } = await supa.from('properties').update({ judge }).eq('id', id);
-  if (error) console.error('judge update error', error);
+async function updatePropertyInSupabase(id, fields) {
+  const { error } = await supa.from('properties').update(fields).eq('id', id);
+  if (error) {
+    // 新カラム未追加の場合はjudgeのみ更新
+    if (fields.judge !== undefined) {
+      const { error: e2 } = await supa.from('properties').update({ judge: fields.judge }).eq('id', id);
+      if (e2) console.error('update error', e2);
+    } else {
+      console.warn('update skipped (columns may not exist yet):', error.message);
+    }
+  }
 }
 
 // ===== STATE =====
@@ -600,6 +641,7 @@ let activeLocationWard = 'all';
 let activeOwnerWard = 'all';
 let activePri = 'all';
 let activeUser = 'all';
+let activeStatus = 'all';
 let activeMainTab = 'location';
 
 // ===== USERS =====
@@ -696,6 +738,14 @@ function filterUser(u, el) {
   el.classList.add('active');
   renderLocationList(); syncMarkers(); closeDrawer();
 }
+function filterStatus(s, el) {
+  activeStatus = s;
+  document.querySelectorAll('.s-sec .s-item').forEach(i => {
+    if (i.onclick && i.onclick.toString().includes('filterStatus')) i.classList.remove('active');
+  });
+  el.classList.add('active');
+  renderLocationList(); syncMarkers(); closeDrawer();
+}
 function doSearch(val) {
   renderLocationList(val.toLowerCase());
   syncMarkers();
@@ -746,12 +796,42 @@ function setJudge(id, judge) {
   const prop = allProperties.find(p => p.id === id);
   if (!prop) return;
   prop.judge = judge;
-  updateJudgeInSupabase(id, judge);
+  if (judge !== 'vacant') prop.approach = null;
+  updatePropertyInSupabase(id, { judge, approach: prop.approach });
   renderLocationList();
   updateCounts();
   if (activeMainTab === 'owner') renderOwnerTab();
-  const labels = { ok:'✅ 営業対象', 'ng-other':'❌ 他社売り出し中', 'ng-resident':'❌ 移住中' };
-  notify('判定を保存しました: ' + (labels[judge] || ''));
+  const labels = { 'vacant':'✅ 空き家確認済み', 'not-vacant':'❌ 空き家でない', 'other-sale':'🚩 他社物件' };
+  notify('物件確認を保存しました: ' + (labels[judge] || ''));
+}
+
+function setApproach(id, approach) {
+  const prop = allProperties.find(p => p.id === id);
+  if (!prop) return;
+  prop.approach = approach;
+  updatePropertyInSupabase(id, { approach });
+  renderLocationList();
+  updateCounts();
+  if (activeMainTab === 'owner') renderOwnerTab();
+  const labels = { 'visited':'🚶 訪問済み', 'negotiating':'💬 交渉中', 'closed':'🎉 成約', 'pass':'⏭ 見送り' };
+  notify('アプローチ状況を保存しました: ' + (labels[approach] || ''));
+}
+
+function saveMemo(id) {
+  const prop = allProperties.find(p => p.id === id);
+  if (!prop) return;
+  prop.visitDate = document.getElementById('vd-' + id)?.value || '';
+  prop.approachDate = document.getElementById('ad-' + id)?.value || '';
+  prop.siteMemo = document.getElementById('sm-' + id)?.value || '';
+  prop.approachMemo = document.getElementById('am-' + id)?.value || '';
+  updatePropertyInSupabase(id, {
+    visit_date: prop.visitDate || null,
+    approach_date: prop.approachDate || null,
+    site_memo: prop.siteMemo || null,
+    approach_memo: prop.approachMemo || null,
+  });
+  toggleReport(id);
+  notify('✓ メモを保存しました');
 }
 
 // ===== フィルター適用 =====
@@ -762,6 +842,14 @@ function getFilteredProps(searchQ) {
     if (activeOwnerWard !== 'all' && p.ownerWard !== activeOwnerWard) return false;
     if (activePri !== 'all' && p.pri !== activePri) return false;
     if (activeUser !== 'all' && p.user !== activeUser) return false;
+    if (activeStatus !== 'all') {
+      if (activeStatus === 'unconfirmed' && p.judge) return false;
+      else if (activeStatus === 'vacant' && p.judge !== 'vacant') return false;
+      else if (activeStatus === 'not-vacant' && p.judge !== 'not-vacant' && p.judge !== 'other-sale') return false;
+      else if (activeStatus === 'approaching' && (!p.approach || p.approach === 'closed' || p.approach === 'pass')) return false;
+      else if (activeStatus === 'closed' && p.approach !== 'closed') return false;
+      else if (activeStatus === 'pass' && p.approach !== 'pass') return false;
+    }
     if (searchQ) {
       const txt = (p.num+p.addr+p.owner+p.type+p.date).toLowerCase();
       if (!txt.includes(searchQ)) return false;
@@ -777,21 +865,32 @@ function renderLocationList(searchQ) {
   list.innerHTML = '';
   document.getElementById('empty-list').style.display = filtered.length === 0 ? '' : 'none';
 
-  filtered.forEach(p => {
-    const judgeOk = p.judge === 'ok';
-    const judgeNgOther = p.judge === 'ng-other';
-    const judgeNgRes = p.judge === 'ng-resident';
-    const judgeNone = !p.judge;
+  const JUDGE_LABELS = {
+    'vacant':     '<span class="stag st-ok">✅ 空き家確認済み</span>',
+    'not-vacant': '<span class="stag st-ng">❌ 空き家でない</span>',
+    'other-sale': '<span class="stag st-ng">🚩 他社物件</span>',
+  };
+  const APPROACH_LABELS = {
+    'visited':    '<span class="stag st-v">🚶 訪問済み</span>',
+    'negotiating':'<span class="stag st-n">💬 交渉中</span>',
+    'closed':     '<span class="stag st-ok">🎉 成約</span>',
+    'pass':       '<span class="stag st-u">⏭ 見送り</span>',
+  };
 
+  filtered.forEach(p => {
     const priClass = 'pri-' + p.pri;
     const badgeClass = 'pb-' + p.pri;
     const badgeText = PRI_LABELS[p.pri] || '';
-
-    let judgeStatusHtml = '';
-    if (judgeOk) judgeStatusHtml = '<span class="stag st-ok">✅ 営業対象</span>';
-    else if (judgeNgOther) judgeStatusHtml = '<span class="stag st-ng">❌ 他社売り出し中</span>';
-    else if (judgeNgRes) judgeStatusHtml = '<span class="stag st-ng">❌ 移住中</span>';
-    else judgeStatusHtml = '<span class="stag st-u">⬜ 未確認</span>';
+    const judgeStatusHtml = JUDGE_LABELS[p.judge] || '<span class="stag st-u">⬜ 未確認</span>';
+    const approachStatusHtml = p.approach ? (APPROACH_LABELS[p.approach] || '') : '';
+    const approachRowHtml = p.judge === 'vacant' ? `
+      <div class="judge-row" style="margin-top:4px">
+        <span class="judge-lbl">アプローチ：</span>
+        <button class="btn-judge ${p.approach==='visited'?'active-ok':''}" onclick="setApproach('${p.id}','visited')">🚶 訪問済み</button>
+        <button class="btn-judge ${p.approach==='negotiating'?'active-ok':''}" onclick="setApproach('${p.id}','negotiating')">💬 交渉中</button>
+        <button class="btn-judge ${p.approach==='closed'?'active-ok':''}" onclick="setApproach('${p.id}','closed')">🎉 成約</button>
+        <button class="btn-judge ${p.approach==='pass'?'active-other':''}" onclick="setApproach('${p.id}','pass')">⏭ 見送り</button>
+      </div>` : '';
 
     const card = document.createElement('div');
     card.className = 'pcard ' + priClass;
@@ -811,34 +910,33 @@ function renderLocationList(searchQ) {
           <span>📅 ${p.date}</span><span>📐 ${p.type}</span>
           <span>👤 ${USERS[p.user]?.name||p.user}</span>
           <span>📍 ${p.locationWard}</span>
-          ${judgeStatusHtml}
+          ${judgeStatusHtml}${approachStatusHtml}
         </div>
         <div class="judge-row">
           <span class="judge-lbl">物件確認：</span>
-          <button class="btn-judge ${judgeOk?'active-ok':''}" onclick="setJudge('${p.id}','ok')">✅ 営業対象</button>
-          <button class="btn-judge ${judgeNgOther?'active-ng':''}" onclick="setJudge('${p.id}','ng-other')">🚩 他社売り出し中</button>
-          <button class="btn-judge ${judgeNgRes?'active-other':''}" onclick="setJudge('${p.id}','ng-resident')">🏠 移住中</button>
+          <button class="btn-judge ${p.judge==='vacant'?'active-ok':''}" onclick="setJudge('${p.id}','vacant')">✅ 空き家確認済み</button>
+          <button class="btn-judge ${p.judge==='not-vacant'?'active-ng':''}" onclick="setJudge('${p.id}','not-vacant')">🏠 空き家でない</button>
+          <button class="btn-judge ${p.judge==='other-sale'?'active-ng':''}" onclick="setJudge('${p.id}','other-sale')">🚩 他社物件</button>
         </div>
+        ${approachRowHtml}
         <div class="cactions">
-          <button class="btn btn-p" onclick="toggleReport('${p.id}')">📸 現地報告</button>
+          <button class="btn btn-p" onclick="toggleReport('${p.id}')">📋 メモ</button>
           <button class="btn btn-gh" onclick="showOnMap('${p.addr.replace(/'/g,"\\'")}','${p.num}','${p.pri}')">🗺️ 地図</button>
         </div>
       </div></div>
       <div class="rpanel" id="rp-${p.id}"><div class="rinner">
-        <div class="rtitle">📋 現地訪問レポート — ${p.num}</div>
+        <div class="rtitle">📋 メモ — ${p.num}</div>
         <div class="frow">
-          <div class="fg"><label class="flbl">訪問日</label><input type="date" class="fi"></div>
-          <div class="fg"><label class="flbl">担当者</label><select class="fsel">
-            ${Object.entries(USERS).map(([k,v])=>`<option value="${k}"${p.user===k?' selected':''}>${v.name}</option>`).join('')}
-          </select></div>
+          <div class="fg"><label class="flbl">物件確認日</label><input type="date" class="fi" id="vd-${p.id}" value="${p.visitDate||''}"></div>
+          <div class="fg"><label class="flbl">所有者訪問日</label><input type="date" class="fi" id="ad-${p.id}" value="${p.approachDate||''}"></div>
         </div>
-        <div class="fg full" style="margin-top:7px"><label class="flbl">物件の状態</label>
-          <select class="fsel"><option>— 選択 —</option><option>良好（すぐ活用可能）</option><option>要修繕（軽微）</option><option>要修繕（大規模）</option><option>取り壊し必要</option></select></div>
-        <div class="fg full" style="margin-top:7px"><label class="flbl">現地メモ</label><textarea class="fta" placeholder="外観の状態、周辺環境など"></textarea></div>
-        <div class="fup" onclick="fakeUp(this)">📷 写真をアップロード</div>
+        <div class="fg full" style="margin-top:7px"><label class="flbl">現地メモ（物件状態など）</label>
+          <textarea class="fta" id="sm-${p.id}" placeholder="外観の状態、周辺環境など">${p.siteMemo||''}</textarea></div>
+        <div class="fg full" style="margin-top:7px"><label class="flbl">アプローチメモ（所有者の反応など）</label>
+          <textarea class="fta" id="am-${p.id}" placeholder="所有者の反応、次回アクションなど">${p.approachMemo||''}</textarea></div>
         <div class="subrow">
-          <button class="btn btn-gh" onclick="document.getElementById('rp-${p.id}').classList.remove('show')">閉じる</button>
-          <button class="btn btn-p" onclick="submitReport('${p.id}')">✓ 報告送信</button>
+          <button class="btn btn-gh" onclick="toggleReport('${p.id}')">閉じる</button>
+          <button class="btn btn-p" onclick="saveMemo('${p.id}')">✓ 保存</button>
         </div>
       </div></div>`;
     list.appendChild(card);
@@ -861,8 +959,8 @@ function fakeUp(el) {
 function renderOwnerTab() {
   const list = document.getElementById('owner-list');
   const sel = document.getElementById('owner-month-filter').value;
-  // 営業対象のみ
-  let props = allProperties.filter(p => p.judge === 'ok');
+  // 空き家確認済みのみ
+  let props = allProperties.filter(p => p.judge === 'vacant');
   if (sel !== 'all') props = props.filter(p => p.month === sel);
 
   list.innerHTML = '';
@@ -885,6 +983,12 @@ function renderOwnerTab() {
     const plist = document.createElement('div');
     plist.className = 'plist';
     items.forEach(p => {
+      const ownerApproachLabels = {
+        'visited':    '<span class="stag st-v">🚶 訪問済み</span>',
+        'negotiating':'<span class="stag st-n">💬 交渉中</span>',
+        'closed':     '<span class="stag st-ok">🎉 成約</span>',
+        'pass':       '<span class="stag st-u">⏭ 見送り</span>',
+      };
       const card = document.createElement('div');
       card.className = 'pcard pri-' + p.pri;
       card.innerHTML = `
@@ -898,7 +1002,16 @@ function renderOwnerTab() {
             <div class="ablock"><div class="albl"><span class="adot adot-p"></span>物件所在地</div><div class="atext">${p.addr}</div></div>
             <div class="ablock"><div class="albl"><span class="adot adot-o"></span>所有者住所</div><div class="atext">${p.owner||'—'}</div></div>
           </div>
-          <div class="cmeta"><span>📅 ${p.date}</span><span>📐 ${p.type}</span><span>👤 ${USERS[p.user]?.name||p.user}</span><span class="stag st-ok">✅ 営業対象</span></div>
+          <div class="cmeta"><span>📅 ${p.date}</span><span>📐 ${p.type}</span><span>👤 ${USERS[p.user]?.name||p.user}</span>
+            ${ownerApproachLabels[p.approach] || '<span class="stag st-u">⬜ 未アプローチ</span>'}
+          </div>
+          <div class="judge-row">
+            <span class="judge-lbl">アプローチ：</span>
+            <button class="btn-judge ${p.approach==='visited'?'active-ok':''}" onclick="setApproach('${p.id}','visited')">🚶 訪問済み</button>
+            <button class="btn-judge ${p.approach==='negotiating'?'active-ok':''}" onclick="setApproach('${p.id}','negotiating')">💬 交渉中</button>
+            <button class="btn-judge ${p.approach==='closed'?'active-ok':''}" onclick="setApproach('${p.id}','closed')">🎉 成約</button>
+            <button class="btn-judge ${p.approach==='pass'?'active-other':''}" onclick="setApproach('${p.id}','pass')">⏭ 見送り</button>
+          </div>
           <div class="cactions">
             <button class="btn btn-gh" onclick="showOnMap('${p.addr.replace(/'/g,"\\'")}','${p.num}','${p.pri}')">🗺️ 地図</button>
           </div>
@@ -969,23 +1082,28 @@ function buildSidebarFilters() {
 // ===== COUNT UPDATE =====
 function updateCounts() {
   const total = allProperties.length;
-  const okCnt = allProperties.filter(p => p.judge === 'ok').length;
-  const unkCnt = allProperties.filter(p => !p.judge).length;
-  const ngCnt = allProperties.filter(p => p.judge && p.judge !== 'ok').length;
+  const vacantCnt    = allProperties.filter(p => p.judge === 'vacant').length;
+  const approachedCnt = allProperties.filter(p => p.approach && p.approach !== 'pass').length;
+  const closedCnt    = allProperties.filter(p => p.approach === 'closed').length;
+  const uncCnt       = allProperties.filter(p => !p.judge).length;
+  const ngCnt        = allProperties.filter(p => p.judge === 'not-vacant' || p.judge === 'other-sale').length;
+  const appCnt       = allProperties.filter(p => p.approach && p.approach !== 'closed' && p.approach !== 'pass').length;
+  const passCnt      = allProperties.filter(p => p.approach === 'pass').length;
   const rCnt = allProperties.filter(p => p.pri === 'r').length;
   const gCnt = allProperties.filter(p => p.pri === 'g').length;
   const yCnt = allProperties.filter(p => p.pri === 'y').length;
   const wCnt = allProperties.filter(p => p.pri === 'w').length;
 
-  document.getElementById('hd-total').textContent = total;
-  document.getElementById('hd-ok').textContent = okCnt;
-  const unkEl = document.getElementById('hd-unk'); if(unkEl) unkEl.textContent = unkCnt;
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-ok').textContent = okCnt;
-  document.getElementById('stat-ng').textContent = ngCnt;
-  document.getElementById('stat-unk').textContent = unkCnt;
   const cnt = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  cnt('hd-total', total);
+  cnt('hd-vacant', vacantCnt);
+  cnt('stat-total', total);
+  cnt('stat-vacant', vacantCnt);
+  cnt('stat-approached', approachedCnt);
+  cnt('stat-closed', closedCnt);
   cnt('cnt-all', total); cnt('cnt-r', rCnt); cnt('cnt-g', gCnt); cnt('cnt-y', yCnt); cnt('cnt-w', wCnt);
+  cnt('cnt-st-all', total); cnt('cnt-st-unc', uncCnt); cnt('cnt-st-vac', vacantCnt);
+  cnt('cnt-st-ng', ngCnt); cnt('cnt-st-app', appCnt); cnt('cnt-st-cls', closedCnt); cnt('cnt-st-pas', passCnt);
 }
 
 function renderAll() {
@@ -1142,7 +1260,7 @@ function extractTownAndNumber(addr) {
 
 function confirmImport() {
   if (!importData.length) return;
-  let added = 0;
+  let added = 0, skipped = 0;
 
   importData.forEach((row, i) => {
     const num   = row['受付番号'] || row['NO'] || row['番号'] || ('新規'+(i+1));
@@ -1151,6 +1269,9 @@ function confirmImport() {
     const type  = row['種別'] || '';
     const date  = row['日付'] || row['受付日'] || '';
     if (!addr) return;
+
+    // 重複チェック（同じ物件住所が既に登録済みならスキップ）
+    if (allProperties.some(p => p.addr === addr)) { skipped++; return; }
 
     let pri = 'w';
     if      (FAR.some(p  => owner.includes(p))) pri = 'r';
@@ -1166,7 +1287,8 @@ function confirmImport() {
     allProperties.push({
       id, num: String(num), addr, owner, type, date,
       pri, user: currentUser || 'kondo',
-      judge: null,
+      judge: null, approach: null,
+      visitDate: '', approachDate: '', siteMemo: '', approachMemo: '',
       month: extractMonth(date),
       locationWard: extractWard(addr),
       ownerWard: extractOwnerWardLabel(owner),
@@ -1183,11 +1305,11 @@ function confirmImport() {
 
   // マップが初期化済みなら新しい物件もプロット
   if (mapInitialized && gMap && geocoder) {
-    const newProps = allProperties.slice(-added);
     newProps.forEach(p => geocodePlot(p));
   }
 
-  notify('✓ ' + added + '件をインポートしました（月・区を自動取得）');
+  const skipMsg = skipped > 0 ? `（${skipped}件重複スキップ）` : '';
+  notify('✓ ' + added + '件をインポートしました' + skipMsg);
   switchView('list', document.querySelectorAll('.tab')[0]);
 }
 
