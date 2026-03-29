@@ -16,12 +16,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --bg:#0f1117; --surface:#1a1d26; --surface2:#222532; --border:#2e3245;
-  --accent:#4f8cff; --accent2:#7c5cfc; --text:#e8eaf0; --muted:#6b7280; --muted2:#9ca3af;
-  --r:#ef4444; --r-bg:rgba(239,68,68,0.07); --r-bd:rgba(239,68,68,0.35);
-  --g:#22c55e; --g-bg:rgba(34,197,94,0.06); --g-bd:rgba(34,197,94,0.3);
-  --y:#f59e0b; --y-bg:rgba(245,158,11,0.06); --y-bd:rgba(245,158,11,0.3);
-  --o:#f97316;
+  --bg:#f4f6f9; --surface:#ffffff; --surface2:#f0f2f7; --border:#e2e6ef;
+  --accent:#3b82f6; --accent2:#7c3aed; --text:#1a1d2e; --muted:#6b7280; --muted2:#9ca3af;
+  --r:#ef4444; --r-bg:rgba(239,68,68,0.06); --r-bd:rgba(239,68,68,0.28);
+  --g:#16a34a; --g-bg:rgba(22,163,74,0.06); --g-bd:rgba(22,163,74,0.28);
+  --y:#d97706; --y-bg:rgba(217,119,6,0.06); --y-bd:rgba(217,119,6,0.28);
+  --o:#ea580c;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
@@ -135,7 +135,7 @@ main{overflow-y:auto;padding:14px 18px;}
 .pb-y{background:rgba(245,158,11,0.15);color:var(--y);}
 .pb-w{background:var(--surface2);color:var(--muted2);}
 .caddrs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
-.ablock{background:rgba(0,0,0,0.18);padding:7px 9px;border-radius:6px;}
+.ablock{background:var(--surface2);padding:7px 9px;border-radius:6px;}
 .albl{font-size:0.58rem;letter-spacing:0.1em;color:var(--muted);margin-bottom:2px;display:flex;align-items:center;gap:3px;}
 .adot{width:5px;height:5px;border-radius:50%;display:inline-block;}
 .adot-p{background:var(--accent);}
@@ -148,7 +148,7 @@ main{overflow-y:auto;padding:14px 18px;}
 .st-n{background:rgba(79,140,255,0.15);color:var(--accent);}
 .st-ok{background:rgba(34,197,94,0.15);color:var(--g);}
 .st-ng{background:rgba(239,68,68,0.12);color:var(--r);}
-.cactions{display:flex;gap:5px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;align-items:center;}
+.cactions{display:flex;gap:5px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center;}
 
 /* 営業判定ボタン */
 .judge-row{display:flex;gap:5px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
@@ -168,7 +168,7 @@ main{overflow-y:auto;padding:14px 18px;}
 /* REPORT PANEL */
 .rpanel{padding:0 14px;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s;}
 .rpanel.show{max-height:600px;padding:0 14px 14px;}
-.rinner{border-top:1px solid rgba(255,255,255,0.06);padding-top:11px;}
+.rinner{border-top:1px solid var(--border);padding-top:11px;}
 .rtitle{font-size:0.73rem;color:var(--muted2);font-weight:500;margin-bottom:9px;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
 .fg{display:grid;gap:3px;}
@@ -219,7 +219,7 @@ main{overflow-y:auto;padding:14px 18px;}
 .preview-title{font-size:0.78rem;font-weight:500;margin-bottom:9px;color:var(--g);}
 .preview-table{width:100%;border-collapse:collapse;font-size:0.7rem;}
 .preview-table th{background:var(--surface2);padding:6px 9px;text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);}
-.preview-table td{padding:6px 9px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--muted2);}
+.preview-table td{padding:6px 9px;border-bottom:1px solid var(--border);color:var(--muted2);}
 .import-actions{display:flex;gap:7px;margin-top:12px;}
 .btn-import-confirm{padding:8px 18px;background:var(--g);color:white;border:none;border-radius:7px;font-size:0.78rem;font-family:inherit;cursor:pointer;font-weight:600;}
 
@@ -227,15 +227,27 @@ main{overflow-y:auto;padding:14px 18px;}
 .notif{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:8px;font-size:0.75rem;font-weight:500;transform:translateY(60px);opacity:0;transition:all 0.25s;z-index:9999;}
 .notif.show{transform:translateY(0);opacity:1;}
 
-/* Google Maps dark */
-.gm-style .gm-style-iw-c{background:#1a1d26!important;border:1px solid #2e3245!important;border-radius:8px!important;padding:0!important;box-shadow:0 4px 20px rgba(0,0,0,0.6)!important;}
-.gm-style .gm-style-iw-d{overflow:hidden!important;color:#e8eaf0!important;}
-.gm-style .gm-style-iw-tc::after{background:#1a1d26!important;}
-.map-iw{padding:13px 15px;min-width:200px;font-family:'Noto Sans JP',sans-serif;}
-.map-iw-num{font-size:0.63rem;color:#6b7280;margin-bottom:3px;}
-.map-iw-title{font-size:0.83rem;font-weight:500;color:#e8eaf0;line-height:1.4;}
-.map-iw-addr{font-size:0.7rem;color:#9ca3af;line-height:1.6;margin-top:5px;}
+/* Google Maps info window */
+.gm-style .gm-style-iw-c{background:#ffffff!important;border:1px solid #e2e6ef!important;border-radius:10px!important;padding:0!important;box-shadow:0 4px 20px rgba(0,0,0,0.12)!important;}
+.gm-style .gm-style-iw-d{overflow:hidden!important;color:#1a1d2e!important;}
+.gm-style .gm-style-iw-tc::after{background:#ffffff!important;}
+.gm-style button.gm-ui-hover-effect{top:4px!important;right:4px!important;}
+.map-iw{padding:14px 16px;min-width:220px;font-family:'Noto Sans JP',sans-serif;}
+.map-iw-num{font-size:0.63rem;color:var(--muted);margin-bottom:3px;}
+.map-iw-title{font-size:0.85rem;font-weight:600;color:var(--text);line-height:1.4;}
+.map-iw-addr{font-size:0.7rem;color:var(--muted2);line-height:1.6;margin-top:5px;}
 .map-iw-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:0.63rem;font-weight:600;margin-top:7px;}
+.map-iw-btn{display:block;width:100%;margin-top:10px;padding:7px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:0.75rem;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:600;text-align:center;}
+.map-iw-btn:hover{opacity:0.88;}
+
+/* 担当者選択モーダル */
+#assign-modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;display:none;align-items:center;justify-content:center;}
+#assign-modal.show{display:flex;}
+.assign-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.1);}
+.assign-title{font-weight:700;font-size:1rem;margin-bottom:5px;}
+.assign-addr{font-size:0.75rem;color:var(--muted);margin-bottom:20px;line-height:1.5;padding:8px 10px;background:var(--surface2);border-radius:6px;}
+.assign-lbl{font-size:0.68rem;color:var(--muted);margin-bottom:6px;}
+.assign-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
 
 /* 空状態 */
 .empty-state{text-align:center;padding:48px 20px;color:var(--muted);font-size:0.82rem;}
@@ -545,6 +557,20 @@ main{overflow-y:auto;padding:14px 18px;}
 <div class="notif" id="notif"></div>
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
 
+<!-- 担当者選択モーダル -->
+<div id="assign-modal">
+  <div class="assign-box">
+    <div class="assign-title">👤 担当者を選択</div>
+    <div class="assign-addr" id="assign-addr"></div>
+    <div class="assign-lbl">この物件の担当者</div>
+    <select id="assign-select" class="fsel" style="width:100%;"></select>
+    <div class="assign-actions">
+      <button class="btn btn-gh" onclick="closeAssignModal()">キャンセル</button>
+      <button class="btn btn-p" onclick="confirmAssign()">✓ 確定して保存</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== CONFIG =====
 const PRI_COLORS = { r:'#ef4444', g:'#22c55e', y:'#f59e0b', w:'#6b7280' };
@@ -553,18 +579,8 @@ const FAR  = ['東京','神奈川','埼玉','千葉','愛知','福岡','北海�
 const NEAR = ['滋賀','奈良','兵庫','三重','福井','和歌山','大阪'];
 
 const DARK_STYLE = [
-  {elementType:'geometry',stylers:[{color:'#1a1d26'}]},
-  {elementType:'labels.text.fill',stylers:[{color:'#9ca3af'}]},
-  {elementType:'labels.text.stroke',stylers:[{color:'#1a1d26'}]},
-  {featureType:'administrative.locality',elementType:'labels.text.fill',stylers:[{color:'#e8eaf0'}]},
   {featureType:'poi',stylers:[{visibility:'off'}]},
-  {featureType:'road',elementType:'geometry.fill',stylers:[{color:'#2e3245'}]},
-  {featureType:'road.arterial',elementType:'geometry',stylers:[{color:'#38404f'}]},
-  {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#3d4a6b'}]},
-  {featureType:'road.highway',elementType:'labels.text.fill',stylers:[{color:'#e8eaf0'}]},
   {featureType:'transit',stylers:[{visibility:'off'}]},
-  {featureType:'water',elementType:'geometry',stylers:[{color:'#0f1117'}]},
-  {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#4f8cff'}]},
 ];
 
 // ===== SUPABASE =====
@@ -791,10 +807,48 @@ function extractMonth(date) {
   return String(date).substring(0,7) || 'その他';
 }
 
+// ===== 担当者選択モーダル =====
+let pendingAssign = null;
+
+function showAssignModal(id, judge) {
+  pendingAssign = { id, judge };
+  const prop = allProperties.find(p => p.id === id);
+  document.getElementById('assign-addr').textContent = prop?.addr || '';
+  const sel = document.getElementById('assign-select');
+  sel.innerHTML = Object.entries(USERS).map(([k,v]) =>
+    `<option value="${k}"${k === (prop?.user || currentUser) ? ' selected' : ''}>${v.name}</option>`
+  ).join('');
+  document.getElementById('assign-modal').classList.add('show');
+}
+function closeAssignModal() {
+  document.getElementById('assign-modal').classList.remove('show');
+  pendingAssign = null;
+}
+function confirmAssign() {
+  if (!pendingAssign) return;
+  const { id, judge } = pendingAssign;
+  const prop = allProperties.find(p => p.id === id);
+  if (!prop) { closeAssignModal(); return; }
+  const assignee = document.getElementById('assign-select').value;
+  prop.user = assignee;
+  prop.judge = judge;
+  updatePropertyInSupabase(id, { judge, user_id: assignee });
+  closeAssignModal();
+  renderLocationList();
+  updateCounts();
+  if (activeMainTab === 'owner') renderOwnerTab();
+  notify('✅ 空き家確認済み — 担当: ' + (USERS[assignee]?.name || assignee));
+}
+
 // ===== 営業判定 =====
 function setJudge(id, judge) {
   const prop = allProperties.find(p => p.id === id);
   if (!prop) return;
+  // 初回訪問（未確認→空き家確認済み）は担当者選択モーダルを表示
+  if (judge === 'vacant' && !prop.judge) {
+    showAssignModal(id, judge);
+    return;
+  }
   prop.judge = judge;
   if (judge !== 'vacant') prop.approach = null;
   updatePropertyInSupabase(id, { judge, approach: prop.approach });
@@ -1157,7 +1211,17 @@ function geocodePlot(p) {
           fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
         animation: google.maps.Animation.DROP,
       });
-      const iw = `<div class="map-iw"><div class="map-iw-num">${p.num}</div><div class="map-iw-title">${p.addr}${p.type?' — '+p.type:''}</div><div class="map-iw-addr">📍 ${p.addr}</div><div class="map-iw-badge" style="background:${color}22;color:${color}">${PRI_LABELS[p.pri]||''}</div></div>`;
+      const iwStatus = ({ vacant:'✅ 空き家確認済み', 'not-vacant':'❌ 空き家でない', 'other-sale':'🚩 他社物件' })[p.judge] || '⬜ 未確認';
+      const iw = `<div class="map-iw">
+        <div class="map-iw-num">${p.num}</div>
+        <div class="map-iw-title">${p.addr}${p.type?' — '+p.type:''}</div>
+        <div class="map-iw-addr">👤 ${p.owner||'—'}</div>
+        <div style="margin-top:7px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+          <span class="map-iw-badge" style="background:${color}18;color:${color}">${PRI_LABELS[p.pri]||''}</span>
+          <span style="font-size:0.63rem;color:var(--muted)">${iwStatus}</span>
+        </div>
+        <button class="map-iw-btn" onclick="goToProperty('${p.id}')">📋 詳細・メモを開く</button>
+      </div>`;
       marker.addListener('click', () => { infoWindow.setContent(iw); infoWindow.open(gMap, marker); });
       p.marker = marker; // propertyにmarkerを紐付け
       syncMarkers();
@@ -1193,6 +1257,23 @@ function showOnMap(addr, num, pri) {
   if (!mapInitialized) { pendingAddr = addr; initMap(); return; }
   focusAddr(addr);
   notify('🗺️ ' + num + ' を地図で表示中');
+}
+
+function goToProperty(id) {
+  switchMainTab('location', document.querySelectorAll('.main-tab')[0]);
+  switchView('list', document.querySelectorAll('.tab')[0]);
+  if (infoWindow) infoWindow.close();
+  // フィルターを全解除して対象カードを確実に表示
+  activeStatus = 'all'; activePri = 'all'; activeMonth = 'all';
+  renderLocationList();
+  setTimeout(() => {
+    const card = document.querySelector('[data-id="' + id + '"]');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const rp = document.getElementById('rp-' + id);
+      if (rp && !rp.classList.contains('show')) rp.classList.add('show');
+    }
+  }, 150);
 }
 
 // ===== EXCEL IMPORT =====
