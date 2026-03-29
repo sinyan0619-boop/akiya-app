@@ -1116,6 +1116,18 @@ function showPreview(data, filename) {
 
 function cancelImport() { document.getElementById('import-preview').style.display='none'; importData=[]; }
 
+// 全角英数→半角に変換してlowercaseで返す
+function toHalfWidth(str) {
+  return str
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+// 住所文字列から区以降（町名＋番地）を正規化して返す
+function extractTownAndNumber(addr) {
+  const kuIdx = addr.indexOf('区');
+  const local = kuIdx !== -1 ? addr.slice(kuIdx + 1) : addr;
+  return toHalfWidth(local).toLowerCase().trim();
+}
+
 function confirmImport() {
   if (!importData.length) return;
   let added = 0;
@@ -1131,7 +1143,12 @@ function confirmImport() {
     let pri = 'w';
     if      (FAR.some(p  => owner.includes(p))) pri = 'r';
     else if (NEAR.some(p => owner.includes(p))) pri = 'g';
-    else if (owner.includes('京都') && addr !== owner) pri = 'y';
+    else if (owner.includes('京都')) {
+      const addrTown  = extractTownAndNumber(addr);
+      const ownerTown = extractTownAndNumber(owner);
+      // 町名＋番地が一致すれば同一住所（pri='w'のまま）、異なれば京都市内別住所
+      if (!addrTown || !ownerTown || addrTown !== ownerTown) pri = 'y';
+    }
 
     const id = 'p' + Date.now() + '_' + i;
     allProperties.push({
