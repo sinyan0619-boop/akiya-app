@@ -253,6 +253,17 @@ main{overflow-y:auto;padding:14px 18px;}
 .empty-state{text-align:center;padding:48px 20px;color:var(--muted);font-size:0.82rem;}
 .empty-state-icon{font-size:2rem;margin-bottom:10px;opacity:0.5;}
 
+/* バッチ履歴 */
+.batch-section{margin-top:22px;}
+.batch-section-title{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:9px;}
+.batch-item{display:flex;align-items:center;gap:9px;padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
+.batch-name{flex:1;font-size:0.8rem;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.batch-date{font-size:0.68rem;color:var(--muted);white-space:nowrap;}
+.batch-cnt{background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:600;white-space:nowrap;}
+.batch-vacant{font-size:0.65rem;color:var(--g);font-weight:500;white-space:nowrap;}
+.batch-del{padding:4px 10px;background:var(--r-bg);border:1px solid var(--r-bd);color:var(--r);border-radius:5px;font-size:0.68rem;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.batch-del:hover{background:rgba(239,68,68,0.15);}
+
 /* ===== MOBILE ===== */
 /* ハンバーガーボタン */
 .btn-menu{display:none;background:none;border:none;color:var(--text);font-size:1.2rem;cursor:pointer;padding:4px 8px;line-height:1;}
@@ -530,6 +541,11 @@ main{overflow-y:auto;padding:14px 18px;}
             <button class="btn-import-confirm" onclick="confirmImport()">✓ この内容でインポート</button>
           </div>
         </div>
+        <!-- インポート履歴 -->
+        <div class="batch-section">
+          <div class="batch-section-title">📦 インポート履歴（アップロード単位で削除）</div>
+          <div id="batch-list"><div style="font-size:0.75rem;color:var(--muted);">インポート履歴がありません</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -603,6 +619,7 @@ async function loadFromSupabase() {
       approachDate: r.approach_date || '',
       siteMemo: r.site_memo || '',
       approachMemo: r.approach_memo || '',
+      batchId: r.batch_id || '',
       month: r.month, locationWard: r.location_ward,
       ownerWard: r.owner_ward, marker: null,
     };
@@ -622,11 +639,12 @@ async function saveToSupabase(props) {
     approach_date: p.approachDate || null,
     site_memo: p.siteMemo || null,
     approach_memo: p.approachMemo || null,
+    batch_id: p.batchId || null,
   }));
   let { error } = await supa.from('properties').upsert(rows);
   if (error) {
     // 新カラム未追加の場合は基本フィールドのみで再試行
-    const basic = rows.map(({ approach, visit_date, approach_date, site_memo, approach_memo, ...r }) => r);
+    const basic = rows.map(({ approach, visit_date, approach_date, site_memo, approach_memo, batch_id, ...r }) => r);
     const res = await supa.from('properties').upsert(basic);
     if (res.error) console.error('save error', res.error);
   }
@@ -1164,6 +1182,7 @@ function renderAll() {
   buildSidebarFilters();
   renderLocationList();
   updateCounts();
+  renderBatchList();
 }
 
 // ===== GOOGLE MAPS =====
@@ -1305,6 +1324,7 @@ function handleFile(file) {
 
 function showPreview(data, filename) {
   importData = data;
+  currentImportFileName = filename;
   if (!data.length) { notify('⚠️ データが見つかりませんでした'); return; }
   document.getElementById('preview-title').textContent = '✓ ' + filename + ' — ' + data.length + '件を検出しました';
   document.getElementById('import-preview').style.display = 'block';
@@ -1338,10 +1358,73 @@ function extractTownAndNumber(addr) {
   const local = kuIdx !== -1 ? addr.slice(kuIdx + 1) : addr;
   return toHalfWidth(local).toLowerCase().trim();
 }
+// 重複判定用：全角→半角・大文字→小文字・空白除去
+function normalizeAddrForDup(addr) {
+  return toHalfWidth(String(addr || ''))
+    .toLowerCase()
+    .replace(/[\s　]/g, '');
+}
+
+// ===== インポート履歴 =====
+let currentImportFileName = '';
+
+function renderBatchList() {
+  const container = document.getElementById('batch-list');
+  if (!container) return;
+  // batchId がある物件のみグループ化
+  const batches = {};
+  allProperties.forEach(p => {
+    if (!p.batchId) return;
+    if (!batches[p.batchId]) batches[p.batchId] = [];
+    batches[p.batchId].push(p);
+  });
+  const entries = Object.entries(batches).sort((a, b) => {
+    const ta = parseInt(a[0].split('|')[1] || '0');
+    const tb = parseInt(b[0].split('|')[1] || '0');
+    return tb - ta; // 新しい順
+  });
+  if (entries.length === 0) {
+    container.innerHTML = '<div style="font-size:0.75rem;color:var(--muted);padding:8px 0;">インポート履歴がありません</div>';
+    return;
+  }
+  container.innerHTML = entries.map(([bid, props]) => {
+    const parts = bid.split('|');
+    const name = parts[0] || '不明';
+    const ts = parseInt(parts[1] || '0');
+    const dateStr = ts ? new Date(ts).toLocaleDateString('ja-JP', {year:'numeric',month:'narrow',day:'numeric'}) : '—';
+    const vacantCnt = props.filter(p => p.judge === 'vacant').length;
+    const safeId = bid.replace(/'/g, "\\'");
+    return `<div class="batch-item">
+      <span class="batch-name">📊 ${name}</span>
+      <span class="batch-date">${dateStr}</span>
+      <span class="batch-cnt">${props.length}件</span>
+      ${vacantCnt > 0 ? `<span class="batch-vacant">✅${vacantCnt}件</span>` : ''}
+      <button class="batch-del" onclick="deleteBatch('${safeId}')">🗑️ 削除</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteBatch(batchId) {
+  const props = allProperties.filter(p => p.batchId === batchId);
+  if (!props.length) return;
+  const name = batchId.split('|')[0];
+  if (!confirm(`「${name}」の${props.length}件を削除しますか？\n営業状況も全て失われます。`)) return;
+  // batch_idで一括削除、失敗時はID個別削除にフォールバック
+  const { error } = await supa.from('properties').delete().eq('batch_id', batchId);
+  if (error) {
+    for (const p of props) {
+      await supa.from('properties').delete().eq('id', p.id);
+    }
+  }
+  allProperties = allProperties.filter(p => p.batchId !== batchId);
+  renderAll();
+  notify(`🗑️ 「${name}」${props.length}件を削除しました`);
+}
 
 function confirmImport() {
   if (!importData.length) return;
   let added = 0, skipped = 0;
+  const batchId = (currentImportFileName || 'import') + '|' + Date.now();
 
   importData.forEach((row, i) => {
     const num   = row['受付番号'] || row['NO'] || row['番号'] || ('新規'+(i+1));
@@ -1351,8 +1434,9 @@ function confirmImport() {
     const date  = row['日付'] || row['受付日'] || '';
     if (!addr) return;
 
-    // 重複チェック（同じ物件住所が既に登録済みならスキップ）
-    if (allProperties.some(p => p.addr === addr)) { skipped++; return; }
+    // 重複チェック：全角→半角・大小文字・空白を正規化して比較
+    const normAddr = normalizeAddrForDup(addr);
+    if (normAddr && allProperties.some(p => normalizeAddrForDup(p.addr) === normAddr)) { skipped++; return; }
 
     let pri = 'w';
     if      (FAR.some(p  => owner.includes(p))) pri = 'r';
@@ -1370,6 +1454,7 @@ function confirmImport() {
       pri, user: currentUser || 'kondo',
       judge: null, approach: null,
       visitDate: '', approachDate: '', siteMemo: '', approachMemo: '',
+      batchId,
       month: extractMonth(date),
       locationWard: extractWard(addr),
       ownerWard: extractOwnerWardLabel(owner),
