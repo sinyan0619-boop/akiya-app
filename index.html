@@ -482,6 +482,9 @@ main{overflow-y:auto;padding:14px 18px;}
           <div class="drop-sub">または クリックしてファイルを選択 (.xlsx, .xls, .csv)</div>
           <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFile(this.files[0])">
         </div>
+        <div style="margin-bottom:14px;">
+          <button class="btn" style="background:var(--r);color:white;border:none;padding:8px 16px;border-radius:7px;font-size:0.78rem;cursor:pointer;font-weight:600;" onclick="deleteAllData()">🗑️ 全データ削除</button>
+        </div>
         <div class="import-format">
           <div class="import-format-title">対応している列名</div>
           <div class="col-list">
@@ -1115,6 +1118,15 @@ function showPreview(data, filename) {
 }
 
 function cancelImport() { document.getElementById('import-preview').style.display='none'; importData=[]; }
+
+async function deleteAllData() {
+  if (!confirm('全データを削除しますか？この操作は元に戻せません。')) return;
+  const { error } = await supa.from('properties').delete().neq('id', '');
+  if (error) { notify('⚠️ 削除に失敗しました'); console.error(error); return; }
+  allProperties = [];
+  renderAll();
+  notify('🗑️ 全データを削除しました');
+}
 
 // 全角英数→半角に変換してlowercaseで返す
 function toHalfWidth(str) {
