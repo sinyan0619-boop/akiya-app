@@ -1352,13 +1352,51 @@ function toHalfWidth(str) {
   return str
     .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 }
-// 住所文字列から区以降（町名＋番地）を正規化して返す
+/**
+ * 住所から「町名-番地-号」の正規化キーを返す。
+ *
+ * 対応パターン例:
+ *   京都市中京区烏帽子屋町486-1-707
+ *   京都市中京区室町通三条下る烏帽子屋町４８６番地１三条室町アーバンライフ７０７号
+ * → どちらも「烏帽子屋町-486-707」を返し、同一住所と判定する。
+ *
+ * 手順:
+ *   1. 全角→半角・小文字化
+ *   2. 区以降を取得
+ *   3. 通り名（上る/下る/東西南北入る）を除去して町名を先頭に
+ *   4. 先頭の〇〇町を町名として抽出
+ *   5. 文字列全体の数字から 番地（最初）と 号（最後）を取得
+ *   6. 「町名-番地-号」を返す
+ */
 function extractTownAndNumber(addr) {
-  const kuIdx = addr.indexOf('区');
-  const local = kuIdx !== -1 ? addr.slice(kuIdx + 1) : addr;
-  return toHalfWidth(local).toLowerCase().trim();
+  if (!addr) return '';
+
+  // 全角→半角・小文字化
+  let s = toHalfWidth(String(addr)).toLowerCase();
+
+  // 区以降を取得
+  const kuIdx = s.indexOf('区');
+  if (kuIdx !== -1) s = s.slice(kuIdx + 1);
+
+  // 通り名（上る/下る/東西南北入る）を除去 → 町名が先頭に来る
+  const dirPat = /^.+?(上[るル]|下[るル]|[東西南北]?入[るル]?)/;
+  const base = dirPat.test(s) ? s.replace(dirPat, '') : s;
+
+  // 先頭の〇〇町を抽出（数字・ハイフンの手前まで）
+  const townMatch = base.match(/^([^\d\-]+町)/);
+  const town = townMatch ? townMatch[1] : '';
+
+  // 文字列全体から全ての数字を抽出（全角は既に半角化済み）
+  const nums = s.match(/\d+/g) || [];
+  if (nums.length === 0) return town;
+
+  const banchi = nums[0];               // 番地（最初の数字）
+  const go     = nums[nums.length - 1]; // 号（最後の数字）
+
+  return town + '-' + banchi + '-' + go;
 }
-// 重複判定用：全角→半角・大文字→小文字・空白除去
+
+// 重複判定用：全角→半角・大文字→小文字・空白除去（町名が取れない場合のフォールバック）
 function normalizeAddrForDup(addr) {
   return toHalfWidth(String(addr || ''))
     .toLowerCase()
@@ -1434,9 +1472,9 @@ function confirmImport() {
     const date  = row['日付'] || row['受付日'] || '';
     if (!addr) return;
 
-    // 重複チェック：全角→半角・大小文字・空白を正規化して比較
-    const normAddr = normalizeAddrForDup(addr);
-    if (normAddr && allProperties.some(p => normalizeAddrForDup(p.addr) === normAddr)) { skipped++; return; }
+    // 重複チェック：町名-番地-号 で比較（通り名・全角半角・大小文字の違いを吸収）
+    const normKey = extractTownAndNumber(addr);
+    if (normKey && allProperties.some(p => extractTownAndNumber(p.addr) === normKey)) { skipped++; return; }
 
     let pri = 'w';
     if      (FAR.some(p  => owner.includes(p))) pri = 'r';
